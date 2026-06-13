@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:17.6
+    container_name: dongle-db
+    restart: always
+    environment:
+      POSTGRES_USER: test1234
+      POSTGRES_PASSWORD: test1234
+      POSTGRES_DB: dongle
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
