@@ -6,6 +6,7 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.core.exception_handler import init_exception_handlers
+from app.core.kafka import start_producer, stop_producer
 from app.exceptions.handler import register_exception_handlers as register_domain_service_handlers
 
 
@@ -15,9 +16,11 @@ logger = logging.getLogger("app.hooks")
 async def lifespan(app: FastAPI):
     """FastAPI lifespan 컨텍스트"""
     logger.info("Dongle Application startup")
+    await start_producer()
     try:
         yield
     finally:
+        await stop_producer()
         logger.info("Dongle Application shutdown")
 
 
