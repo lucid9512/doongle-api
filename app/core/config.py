@@ -32,6 +32,12 @@ class Settings(BaseSettings):
     # NoDecode 로 pydantic-settings 의 자동 JSON 파싱을 끄고, 아래 validator 에서 직접 처리
     CORS_ORIGINS: Annotated[List[str], NoDecode] = []
 
+    # ===== Kafka =====
+    # 클러스터 내부: kafka-0.kafka.kafka.svc.cluster.local:9092
+    # 로컬 개발: localhost:9092 등으로 .env 에서 교체
+    KAFKA_BOOTSTRAP_SERVERS: str
+    KAFKA_UPLOAD_TOPIC: str = "image-upload"
+
     # ===== ClickHouse (옵셔널) =====
     CH_HOST: str = "localhost"
     CH_PORT: int = 8123

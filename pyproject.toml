@@ -24,6 +24,7 @@ dependencies = [
     "python-jose[cryptography] (>=3.5.0,<4.0.0)",
     "itsdangerous (>=2.2.0,<3.0.0)",
     "fastapi-pagination (>=0.14.1,<0.15.0)",
+    "aiokafka (>=0.11.0,<0.12.0)",
 ]
 
 
