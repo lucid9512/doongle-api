@@ -1,0 +1,33 @@
+# 가상환경 / 빌드 산출물
+.venv/
+venv/
+*.egg-info/
+
+# 파이썬 캐시
+__pycache__/
+*.py[cod]
+
+# 비밀/환경 (런타임 주입하므로 이미지에 넣지 않는다)
+.env
+.env.*
+
+# git / 로컬 도구 설정
+.git/
+.gitignore
+.claude/
+
+# 로컬 저장소 / 로그 (런타임에 생성·마운트)
+uploads/
+logs/
+*.log
+
+# 문서 (런타임 불필요)
+docs/
+*.md
+
+# 로컬 개발용 (이미지에 불필요)
+docker-compose.yaml
+poetry.lock
+
+# OS
+.DS_Store
