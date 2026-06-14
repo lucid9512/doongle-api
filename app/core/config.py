@@ -39,9 +39,16 @@ class Settings(BaseSettings):
     KAFKA_UPLOAD_TOPIC: str = "image-upload"
 
     # ===== Storage =====
-    # 저장소 백엔드 선택 (현재 local 만 지원, 추후 minio 등 확장)
+    # 저장소 백엔드 선택 (local | minio)
     STORAGE_BACKEND: str = "local"
     LOCAL_STORAGE_PATH: str = "./uploads"
+    # MinIO(S3 호환) 백엔드용. STORAGE_BACKEND=minio 일 때 사용.
+    # 버킷은 콘솔에서 미리 생성해 둔다고 가정한다(앱이 생성하지 않음).
+    MINIO_ENDPOINT: str = "localhost:9000"
+    MINIO_ACCESS_KEY: str = ""
+    MINIO_SECRET_KEY: str = ""
+    MINIO_BUCKET: str = "images"
+    MINIO_SECURE: bool = False
 
     # ===== ClickHouse (옵셔널) =====
     CH_HOST: str = "localhost"
