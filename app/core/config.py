@@ -38,6 +38,11 @@ class Settings(BaseSettings):
     KAFKA_BOOTSTRAP_SERVERS: str
     KAFKA_UPLOAD_TOPIC: str = "image-upload"
 
+    # ===== Storage =====
+    # 저장소 백엔드 선택 (현재 local 만 지원, 추후 minio 등 확장)
+    STORAGE_BACKEND: str = "local"
+    LOCAL_STORAGE_PATH: str = "./uploads"
+
     # ===== ClickHouse (옵셔널) =====
     CH_HOST: str = "localhost"
     CH_PORT: int = 8123
