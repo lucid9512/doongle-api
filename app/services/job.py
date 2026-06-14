@@ -14,9 +14,10 @@ from app.exceptions import (
     DatabaseCommitError,
     FileIOError,
     ObjectNotFoundError,
-    UnprocessableEntityError,
 )
 from app.models.job import Job
+from app.schemas.model.job import JobAcceptedSchema, JobSchema
+from app.schemas.req.upload import UploadImageMeta
 
 logger = logging.getLogger(__name__)
 
@@ -49,30 +50,28 @@ class JobService:
         if not files:
             raise UnprocessableEntityError(message="MSG_NO_FILES")
 
-        # 1) 먼저 전부 이미지인지 검증 (부분 저장 방지)
-        for file in files:
-            if not (file.content_type or "").startswith("image/"):
-                logger.warning(
-                    f"[JobService] Not an image: {file.filename} ({file.content_type})"
-                )
-                raise UnprocessableEntityError(message="MSG_NOT_AN_IMAGE")
+        # 1) 메타(파일명 길이·공백, content-type) 검증을 스키마에서 일괄 처리 (부분 저장 방지)
+        metas = [
+            UploadImageMeta(filename=file.filename or "", content_type=file.content_type or "")
+            for file in files
+        ]
 
         # 2) 저장 + job(pending) 적재
         accepted = []
         try:
-            for file in files:
+            for file, meta in zip(files, metas):
                 image_path = await storage.save(file)
                 job_id = uuid.uuid4().hex
                 self.db.add(
                     Job(
                         job_id=job_id,
-                        filename=file.filename or "",
+                        filename=meta.filename,
                         image_path=image_path,
                         status="pending",
                     )
                 )
                 accepted.append(
-                    {"job_id": job_id, "filename": file.filename, "image_path": image_path}
+                    {"job_id": job_id, "filename": meta.filename, "image_path": image_path}
                 )
         except Exception as e:
             logger.exception(f"[JobService] File save failed : {e}")
@@ -98,7 +97,9 @@ class JobService:
             )
 
         return [
-            {"job_id": item["job_id"], "filename": item["filename"], "status": "pending"}
+            JobAcceptedSchema(
+                job_id=item["job_id"], filename=item["filename"], status="pending"
+            ).model_dump()
             for item in accepted
         ]
 
@@ -116,12 +117,7 @@ class JobService:
         """job_id 로 단일 job 조회 (폴링용)."""
         logger.info(f"[JobService] Job Get request (job_id={job_id})")
         job = await self._get_or_404(job_id)
-        return {
-            "job_id": job.job_id,
-            "filename": job.filename,
-            "status": job.status,
-            "result": job.result,
-        }
+        return JobSchema.model_validate(job).model_dump()
 
     async def load_image(self, job_id: str, storage: StorageBackend) -> tuple[bytes, str]:
         """job 의 원본 이미지 바이트와 media_type 반환 (썸네일용)."""
