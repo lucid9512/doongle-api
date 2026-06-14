@@ -23,8 +23,11 @@
 - 기존 인증·어드민·마이그레이션 스택은 그대로 둔다 (의도된 풀스택 골격).
 
 ## 코드 컨벤션
+- **레이어 분리**: 비즈니스 로직은 `app/services/` 에 둔다. 라우터(`app/apis/`)는 요청 수신·서비스 호출·응답만(얇게). 로직을 라우터에 직접 박지 않는다.
+- **에러 처리**: `HTTPException` 을 직접 던지지 말고 도메인/서비스 예외(`app/exceptions/`, 예: `ObjectNotFoundError`·`UnprocessableEntityError`·`FileIOError`)를 사용한다. → 전역 핸들러가 표준 `ErrorRes` 로 변환한다.
+- **스키마**: 응답 `data` 는 `app/schemas/model/` 의 스키마로 만들어 반환한다(생 dict 금지, `Schema.model_validate(obj).model_dump()`). 입력 검증(길이·형식 등)은 `app/schemas/req/` 에서 선언적으로 처리한다.
 - 라우터: `APIRouter(prefix="/...", tags=["..."])`. `app/apis/v1/`에 추가 후 `app/apis/v1/__init__.py`에 `include_router` 등록.
-- 응답: `app/schemas/res/common.py`의 `SuccessJsonRes` 사용.
+- 응답 외피: `app/schemas/res/common.py`의 `SuccessJsonRes` 사용(전 API 공용 envelope).
 - 설정: `app/core/config.py`의 `Settings`에 필드 추가 + `.env.example`에 항목 추가.
 - 의존성 주입: `app/deps/`에 정의하고 `Depends`로 주입.
 - 로깅: `logging.getLogger("app.xxx")` 패턴.
