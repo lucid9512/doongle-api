@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Doongle — 이미지 업로드</title>
+  <style>
+    :root { --bg:#0f1115; --card:#1a1d24; --line:#2a2f3a; --fg:#e6e8ec; --muted:#8b93a1; --accent:#5b8cff; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+           background:var(--bg); color:var(--fg); }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 32px 20px 64px; }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    p.sub { color: var(--muted); margin: 0 0 24px; font-size: 14px; }
+    .uploader { display:flex; gap:12px; align-items:center; flex-wrap:wrap;
+                background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; }
+    input[type=file] { color: var(--muted); }
+    button { background:var(--accent); color:#fff; border:0; border-radius:8px;
+             padding:10px 18px; font-size:14px; cursor:pointer; }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap:16px; margin-top:28px; }
+    .cardx { background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+    .thumb { width:100%; height:150px; object-fit:cover; background:#0b0d11; display:block; }
+    .meta { padding:10px 12px; }
+    .fname { font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .row { display:flex; align-items:center; justify-content:space-between; margin-top:8px; }
+    .badge { font-size:12px; padding:3px 9px; border-radius:999px; display:inline-flex; align-items:center; gap:6px; }
+    .badge.pending { background:#3a2f12; color:#f0c24b; }
+    .badge.done    { background:#10331f; color:#52d68a; }
+    .badge.error   { background:#3a1518; color:#f06a72; }
+    .spin { width:10px; height:10px; border:2px solid #f0c24b; border-top-color:transparent;
+            border-radius:50%; animation:spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .result { font-size:12px; color:var(--muted); margin-top:6px; word-break:break-all; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Doongle 이미지 업로드</h1>
+    <p class="sub">이미지를 올리면 접수(job)가 생성되고, 각 카드가 결과를 폴링합니다. (워커가 없으면 계속 pending)</p>
+
+    <form id="form" class="uploader">
+      <input id="files" type="file" name="files" accept="image/*" multiple required />
+      <button id="submit" type="submit">업로드</button>
+      <span id="hint" style="color:var(--muted); font-size:13px;"></span>
+    </form>
+
+    <div id="grid" class="grid"></div>
+  </div>
+
+  <script>
+    const POLL_MS = 2500;
+    const form = document.getElementById("form");
+    const filesInput = document.getElementById("files");
+    const submitBtn = document.getElementById("submit");
+    const hint = document.getElementById("hint");
+    const grid = document.getElementById("grid");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!filesInput.files.length) return;
+
+      const fd = new FormData();
+      for (const f of filesInput.files) fd.append("files", f);
+
+      submitBtn.disabled = true;
+      hint.textContent = "업로드 중...";
+      try {
+        const res = await fetch("/api/v1/upload", { method: "POST", body: fd });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const body = await res.json();
+        const jobs = (body.data && body.data.jobs) || [];
+        hint.textContent = `${jobs.length}개 접수됨`;
+        jobs.forEach(addCard);
+        form.reset();
+      } catch (err) {
+        hint.textContent = "업로드 실패: " + err.message;
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    function addCard(job) {
+      const id = job.jobId;
+      const card = document.createElement("div");
+      card.className = "cardx";
+      card.innerHTML = `
+        <img class="thumb" src="/api/v1/jobs/${id}/image" alt="" onerror="this.style.opacity=.2" />
+        <div class="meta">
+          <div class="fname" title="${job.filename || ""}">${job.filename || id}</div>
+          <div class="row">
+            <span class="badge pending" data-badge><span class="spin"></span> pending</span>
+          </div>
+          <div class="result" data-result></div>
+        </div>`;
+      grid.prepend(card);
+      pollJob(id, card);
+    }
+
+    async function pollJob(id, card) {
+      const badge = card.querySelector("[data-badge]");
+      const resultEl = card.querySelector("[data-result]");
+      try {
+        const res = await fetch(`/api/v1/jobs/${id}`);
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = (await res.json()).data || {};
+        const st = data.status || "pending";
+
+        if (st === "done") {
+          badge.className = "badge done";
+          badge.textContent = "done";
+          if (data.result) resultEl.textContent = data.result;
+          return; // 폴링 중단
+        }
+        if (st === "error" || st === "failed") {
+          badge.className = "badge error";
+          badge.textContent = st;
+          if (data.result) resultEl.textContent = data.result;
+          return;
+        }
+        // pending → 스피너 유지하고 계속 폴링
+      } catch (err) {
+        // 일시 오류는 무시하고 다음 주기에 재시도
+      }
+      setTimeout(() => pollJob(id, card), POLL_MS);
+    }
+  </script>
+</body>
+</html>

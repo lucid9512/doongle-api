@@ -1,6 +1,9 @@
-from fastapi import FastAPI
+from pathlib import Path
+
+from fastapi import FastAPI, Request
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi_pagination import add_pagination
 
@@ -72,3 +75,15 @@ async def custom_swagger_ui_html():
 @app.get("/")
 def read_root():
     return {"message": "Hello, Dongle!"}
+
+
+# ============================================================
+# 6. 업로드 데모 화면 (Jinja)
+# ============================================================
+templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
+
+
+@app.get("/upload-ui", include_in_schema=False)
+def upload_ui(request: Request):
+    """이미지 업로드 + job 폴링 데모 페이지"""
+    return templates.TemplateResponse("upload.html", {"request": request})
