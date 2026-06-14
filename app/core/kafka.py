@@ -5,7 +5,7 @@ Kafka Producer 헬퍼
 - start_producer() 는 lifespan startup 에서, stop_producer() 는 shutdown 에서 호출한다.
 - Kafka 브로커에 접속할 수 없는 환경에서도 FastAPI 앱은 부팅되어야 하므로
   start 실패 시 예외를 삼키고 producer 를 None 으로 둔다. (ClickHouse 헬퍼와 동일 철학)
-- 접속 정보는 .env 의 KAFKA_BOOTSTRAP_SERVERS / KAFKA_UPLOAD_TOPIC 로 설정한다.
+- 접속 정보는 .env 의 KAFKA_BROKER / KAFKA_TOPIC 로 설정한다.
 """
 import logging
 from typing import Optional
@@ -27,20 +27,20 @@ async def start_producer() -> None:
         logger.warning("Kafka producer 가 이미 시작되어 있습니다.")
         return
 
-    producer = AIOKafkaProducer(bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS)
+    producer = AIOKafkaProducer(bootstrap_servers=settings.KAFKA_BROKER)
     try:
         await producer.start()
     except Exception as e:  # 브로커 미가용 등 — 앱 부팅은 막지 않는다
         logger.warning(
             "Kafka producer 시작 실패 (bootstrap=%s): %s. "
             "업로드 기능은 비활성 상태로 동작합니다.",
-            settings.KAFKA_BOOTSTRAP_SERVERS,
+            settings.KAFKA_BROKER,
             e,
         )
         return
 
     _producer = producer
-    logger.info("Kafka producer 시작 (bootstrap=%s)", settings.KAFKA_BOOTSTRAP_SERVERS)
+    logger.info("Kafka producer 시작 (bootstrap=%s)", settings.KAFKA_BROKER)
 
 
 async def stop_producer() -> None:

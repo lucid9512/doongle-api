@@ -90,9 +90,9 @@ class JobService:
             payload = json.dumps(
                 {"job_id": item["job_id"], "image_path": item["image_path"]}
             ).encode("utf-8")
-            await producer.send_and_wait(settings.KAFKA_UPLOAD_TOPIC, payload)
+            await producer.send_and_wait(settings.KAFKA_TOPIC, payload)
             logger.info(
-                f"[JobService] produced job_id={item['job_id']} to {settings.KAFKA_UPLOAD_TOPIC}"
+                f"[JobService] produced job_id={item['job_id']} to {settings.KAFKA_TOPIC}"
             )
 
         return [

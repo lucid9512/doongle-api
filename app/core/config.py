@@ -35,8 +35,8 @@ class Settings(BaseSettings):
     # ===== Kafka =====
     # 클러스터 내부: kafka-0.kafka.kafka.svc.cluster.local:9092
     # 로컬 개발: localhost:9092 등으로 .env 에서 교체
-    KAFKA_BOOTSTRAP_SERVERS: str
-    KAFKA_UPLOAD_TOPIC: str = "image-upload"
+    KAFKA_BROKER: str
+    KAFKA_TOPIC: str = "image-jobs"
 
     # ===== Storage =====
     # 저장소 백엔드 선택 (local | minio)
