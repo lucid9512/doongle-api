@@ -1,0 +1,21 @@
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Uploads (local storage)
+uploads/
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
