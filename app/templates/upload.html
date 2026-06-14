@@ -61,8 +61,11 @@
       e.preventDefault();
       if (!filesInput.files.length) return;
 
+      // reset 전에 File 객체를 보관 — 미리보기는 서버 재요청 없이 이 로컬 파일로 그린다
+      const selected = Array.from(filesInput.files);
+
       const fd = new FormData();
-      for (const f of filesInput.files) fd.append("files", f);
+      for (const f of selected) fd.append("files", f);
 
       submitBtn.disabled = true;
       hint.textContent = "업로드 중...";
@@ -72,7 +75,8 @@
         const body = await res.json();
         const jobs = (body.data && body.data.jobs) || [];
         hint.textContent = `${jobs.length}개 접수됨`;
-        jobs.forEach(addCard);
+        // 업로드 응답 jobs 는 보낸 파일 순서와 동일 → 인덱스로 로컬 File 과 짝지음
+        jobs.forEach((job, i) => addCard(job, selected[i]));
         form.reset();
       } catch (err) {
         hint.textContent = "업로드 실패: " + err.message;
@@ -81,12 +85,12 @@
       }
     });
 
-    function addCard(job) {
+    function addCard(job, file) {
       const id = job.jobId;
       const card = document.createElement("div");
       card.className = "cardx";
       card.innerHTML = `
-        <img class="thumb" src="/api/v1/jobs/${id}/image" alt="" onerror="this.style.opacity=.2" />
+        <img class="thumb" alt="" />
         <div class="meta">
           <div class="fname" title="${job.filename || ""}">${job.filename || id}</div>
           <div class="row">
@@ -95,6 +99,17 @@
           <div class="result" data-result></div>
         </div>`;
       grid.prepend(card);
+
+      // 미리보기: 서버에서 다시 받지 않고, 방금 업로드한 로컬 File 로 그린다
+      const img = card.querySelector(".thumb");
+      if (file) {
+        const url = URL.createObjectURL(file);
+        img.src = url;
+        img.onload = () => URL.revokeObjectURL(url); // 렌더 후 메모리 해제
+      } else {
+        img.style.opacity = .2;
+      }
+
       pollJob(id, card);
     }
 

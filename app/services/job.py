@@ -1,6 +1,5 @@
 import json
 import logging
-import mimetypes
 import uuid
 
 from aiokafka import AIOKafkaProducer
@@ -118,20 +117,3 @@ class JobService:
         logger.info(f"[JobService] Job Get request (job_id={job_id})")
         job = await self._get_or_404(job_id)
         return JobSchema.model_validate(job).model_dump()
-
-    async def load_image(self, job_id: str, storage: StorageBackend) -> tuple[bytes, str]:
-        """job 의 원본 이미지 바이트와 media_type 반환 (썸네일용)."""
-        logger.info(f"[JobService] Job image Get request (job_id={job_id})")
-        job = await self._get_or_404(job_id)
-
-        try:
-            content = storage.load(job.image_path)
-        except FileNotFoundError:
-            logger.warning(f"[JobService] Image file missing (job_id={job_id})")
-            raise ObjectNotFoundError(message="MSG_IMAGE_NOT_FOUND")
-
-        media_type = (
-            mimetypes.guess_type(job.filename or job.image_path)[0]
-            or "application/octet-stream"
-        )
-        return content, media_type
